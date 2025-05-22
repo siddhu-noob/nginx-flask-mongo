@@ -1,0 +1,35 @@
+services:
+  nginx:
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+    environment:
+      - FLASK_SERVER_ADDR=backend:9091 # Set the backend server address
+    command: /bin/sh -c "envsubst < /tmp/nginx.conf > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'" # Use envsubst to replace environment variables in the config file
+    volumes:
+      - ./nginx/nginx.conf:/tmp/nginx.conf # Mount the local nginx config file to /tmp in the container
+    ports:
+      - "80:80" # Map port 80 of the host to port 80 of the container
+    container_name: nginx
+    depends_on:
+      - backend
+
+  backend:
+    build:
+      context: flask
+      target: baseimage
+    stop_signal: SIGINT # Use SIGINT to stop the container
+    environment:
+      - FLASK_SERVER_ADDR=9091 # Set the Flask server address
+    volumes:
+      - ./flask:/usr/src/app # Mount the local flask directory to /app in the container
+    container_name: flask_backend
+    depends_on:
+      - mongodb
+    
+  mongodb:
+    image: mongo:latest # Use the latest MongoDB image
+    container_name: mongodb
+    ports:
+      - "27017:27017" # Map port 27017 of the host to port 27017 of the container
+    
